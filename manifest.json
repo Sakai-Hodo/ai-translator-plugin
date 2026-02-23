@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "SaaS AI Image Translator",
+  "version": "1.0",
+  "description": "Hover over product images to translate them using AI.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "clipboardWrite",
+    "downloads",
+    "storage"
+  ],
+  "action": {},
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_end"
+    }
+  ],
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
