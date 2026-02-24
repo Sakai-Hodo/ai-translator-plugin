@@ -98,6 +98,14 @@ const STYLES = `
   .img-col span { margin-top: 10px; font-size: 13px; color: #6B7280; font-weight: 500; }
   .arrow { font-size: 24px; color: #9CA3AF; }
   
+  .close-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #E5E7EB;
+    background: white; color: #9CA3AF; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+  }
+  .close-btn:hover { background: #FEE2E2; border-color: #FCA5A5; color: #EF4444; }
+
   .actions { display: flex; justify-content: flex-end; gap: 12px; }
   .btn-primary {
     background: #4F46E5; color: white; border: none; padding: 10px 20px;
@@ -110,6 +118,12 @@ const STYLES = `
     border-radius: 6px; cursor: pointer; font-size: 14px;
   }
   .btn-secondary:hover { background: #F3F4F6; }
+  .btn-retry {
+    background: #F59E0B; color: white; border: none; padding: 10px 20px;
+    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;
+  }
+  .btn-retry:hover { background: #D97706; }
+  .btn-retry:disabled { background: #9CA3AF; cursor: not-allowed; }
 `;
 
 // ==========================================
@@ -230,6 +244,8 @@ document.addEventListener('scroll', removeHoverButton, true);
 // ==========================================
 
 async function handleTranslate(srcUrl, targetLang) {
+  // 记录目标语言（重试时使用）
+  lastTargetLanguage = targetLang;
   // 标记为翻译中
   translatingImages.set(srcUrl, "translating");
 
@@ -294,9 +310,11 @@ async function handleTranslate(srcUrl, targetLang) {
 const modalQueue = [];
 let isModalOpen = false;
 
+// 记录最后使用的目标语言，用于重试
+let lastTargetLanguage = "English";
+
 function showModal(originalUrl, translatedUrl) {
   if (isModalOpen) {
-    // 已有弹窗打开，排队等待
     modalQueue.push({ originalUrl, translatedUrl });
     return;
   }
@@ -324,6 +342,7 @@ function _renderModal(originalUrl, translatedUrl) {
     <div class="modal-box">
       <div class="modal-header">
         <h3 class="modal-title">✨ AI 翻译完成${queueInfo}</h3>
+        <button id="closeX" class="close-btn">✕</button>
       </div>
       
       <div class="compare-area">
@@ -339,7 +358,7 @@ function _renderModal(originalUrl, translatedUrl) {
       </div>
 
       <div class="actions">
-        <button id="cancelBtn" class="btn-secondary">关闭</button>
+        <button id="retryBtn" class="btn-retry">🔁 重试</button>
         <button id="downloadBtn" class="btn-secondary">💾 下载图片</button>
         <button id="replaceBtn" class="btn-primary">🔄 替换原图</button>
       </div>
@@ -356,7 +375,20 @@ function _renderModal(originalUrl, translatedUrl) {
     }
   }
 
-  container.querySelector('#cancelBtn').onclick = closeModal;
+  container.querySelector('#closeX').onclick = closeModal;
+
+  // 重试翻译
+  container.querySelector('#retryBtn').onclick = () => {
+    const retryBtn = container.querySelector('#retryBtn');
+    retryBtn.innerText = '⏳ 重新翻译中...';
+    retryBtn.disabled = true;
+    // 重置图片状态
+    translatingImages.delete(originalUrl);
+    // 关闭当前弹窗
+    closeModal();
+    // 重新发起翻译
+    handleTranslate(originalUrl, lastTargetLanguage);
+  };
 
   // 下载
   container.querySelector('#downloadBtn').onclick = () => {
