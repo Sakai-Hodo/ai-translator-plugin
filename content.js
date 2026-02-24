@@ -1,4 +1,4 @@
-// content.js - 最终修复版 (定位修正 + 弹窗功能)
+// content.js - 支持多图片并发翻译
 
 console.log("🚀 AI 翻译插件已就绪 (Frame: " + window.name + ")");
 
@@ -48,6 +48,7 @@ const STYLES = `
     white-space: nowrap;
   }
   .ai-btn:hover { background: #4338CA; transform: translateY(-1px); }
+  .ai-btn:disabled { background: #9CA3AF; cursor: not-allowed; transform: none; }
 
   /* 结果弹窗样式 */
   .modal-overlay {
@@ -103,6 +104,7 @@ const STYLES = `
     border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;
   }
   .btn-primary:hover { background: #4338CA; }
+  .btn-primary:disabled { background: #9CA3AF; cursor: not-allowed; }
   .btn-secondary {
     background: white; color: #374151; border: 1px solid #D1D5DB; padding: 10px 20px;
     border-radius: 6px; cursor: pointer; font-size: 14px;
@@ -111,7 +113,13 @@ const STYLES = `
 `;
 
 // ==========================================
-// 2. 悬浮按钮逻辑 (这是刚刚验证成功的版本)
+// 2. 翻译状态追踪
+// ==========================================
+// key: img.src, value: "translating" | "done"
+const translatingImages = new Map();
+
+// ==========================================
+// 3. 悬浮按钮逻辑（支持多图并发）
 // ==========================================
 let hoverBtnHost = null;
 
@@ -119,15 +127,20 @@ function createHoverButton(img) {
   if (hoverBtnHost && hoverBtnHost.dataset.imgSrc === img.src) return;
   removeHoverButton();
 
+  const imgSrc = img.src;
+  const state = translatingImages.get(imgSrc);
+
+  // 已经翻译完成的图片不再显示按钮
+  if (state === "done") return;
+
   const host = document.createElement('div');
-  host.dataset.imgSrc = img.src;
+  host.dataset.imgSrc = imgSrc;
   const shadow = host.attachShadow({ mode: 'open' });
 
   const style = document.createElement('style');
   style.textContent = STYLES;
   shadow.appendChild(style);
 
-  // 工具栏容器
   const toolbar = document.createElement('div');
   toolbar.className = 'ai-toolbar';
 
@@ -150,31 +163,38 @@ function createHoverButton(img) {
   // 翻译按钮
   const btn = document.createElement('button');
   btn.className = 'ai-btn';
-  btn.innerHTML = `<span>✨ AI 翻译</span>`;
+
+  // 如果正在翻译，按钮显示进度并禁用
+  if (state === "translating") {
+    btn.innerHTML = `⏳ 翻译中...`;
+    btn.disabled = true;
+    langSelect.disabled = true;
+  } else {
+    btn.innerHTML = `<span>✨ AI 翻译</span>`;
+  }
 
   toolbar.appendChild(langSelect);
   toolbar.appendChild(btn);
 
-  // 计算位置 (使用之前验证成功的左上角逻辑)
+  // 计算位置
   const rect = img.getBoundingClientRect();
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
   const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0;
 
-  const top = rect.top + scrollTop + 10;
-  const left = rect.left + scrollLeft + 10;
-
   host.style.position = 'absolute';
-  host.style.top = `${top}px`;
-  host.style.left = `${left}px`;
+  host.style.top = `${rect.top + scrollTop + 10}px`;
+  host.style.left = `${rect.left + scrollLeft + 10}px`;
   host.style.zIndex = '2147483647';
 
-  // 点击触发
+  // 点击触发翻译
   btn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    btn.innerHTML = `⏳ 处理中...`;
+    btn.innerHTML = `⏳ 翻译中...`;
+    btn.disabled = true;
+    langSelect.disabled = true;
     const targetLang = langSelect.value;
-    handleTranslate(img.src, targetLang, () => removeHoverButton());
+    handleTranslate(imgSrc, targetLang);
   };
 
   shadow.appendChild(toolbar);
@@ -192,28 +212,29 @@ function removeHoverButton() {
 // 监听鼠标移动
 document.addEventListener('mouseover', (e) => {
   const target = e.target;
-  // 排除掉我们插件自己的按钮
   if (target === hoverBtnHost || (hoverBtnHost && hoverBtnHost.contains(target))) return;
 
   if (target.tagName === 'IMG') {
     const rect = target.getBoundingClientRect();
-    // 只要图片有尺寸就显示 (放宽限制到 20px)
     if (rect.width > 20 && rect.height > 20) {
       createHoverButton(target);
     }
   }
 }, true);
 
-// 滚动时隐藏，防止错位
+// 滚动时隐藏
 document.addEventListener('scroll', removeHoverButton, true);
 
 // ==========================================
-// 3. AI 翻译 (通过 background.js 调用 API)
+// 4. AI 翻译（支持并发，互不干扰）
 // ==========================================
 
-async function handleTranslate(srcUrl, targetLang, cleanupCallback) {
+async function handleTranslate(srcUrl, targetLang) {
+  // 标记为翻译中
+  translatingImages.set(srcUrl, "translating");
+
   try {
-    // 先检查是否已配置 API Key
+    // 检查配置
     const configOk = await new Promise((resolve) => {
       chrome.runtime.sendMessage({ action: "checkConfig" }, (res) => {
         resolve(res && res.configured);
@@ -221,13 +242,13 @@ async function handleTranslate(srcUrl, targetLang, cleanupCallback) {
     });
 
     if (!configOk) {
+      translatingImages.delete(srcUrl);
+      removeHoverButton();
       alert("⚠️ 请先配置 API Key！\n右键点击插件图标 → 选项，或点击插件图标打开设置。");
-      chrome.runtime.sendMessage({ action: "openOptions" });
-      if (cleanupCallback) cleanupCallback();
       return;
     }
 
-    // 发送翻译请求到 background.js
+    // 发送翻译请求
     const result = await new Promise((resolve, reject) => {
       chrome.runtime.sendMessage(
         { action: "translate", imageUrl: srcUrl, targetLanguage: targetLang },
@@ -243,7 +264,11 @@ async function handleTranslate(srcUrl, targetLang, cleanupCallback) {
       );
     });
 
-    // 自动保存翻译记录到 IndexedDB
+    // 标记为已完成
+    translatingImages.set(srcUrl, "done");
+    removeHoverButton();
+
+    // 保存记录
     chrome.runtime.sendMessage({
       action: "saveRecord",
       originalUrl: srcUrl,
@@ -252,21 +277,35 @@ async function handleTranslate(srcUrl, targetLang, cleanupCallback) {
       sourcePageUrl: window.location.href,
     });
 
-    // 调用 showModal 显示结果
+    // 显示结果弹窗
     showModal(srcUrl, result.translatedDataUrl);
 
-    if (cleanupCallback) cleanupCallback();
   } catch (error) {
     console.error("Translation Error:", error);
+    translatingImages.delete(srcUrl);
+    removeHoverButton();
     alert("处理失败: " + error.message);
-    if (cleanupCallback) cleanupCallback();
   }
 }
 
 // ==========================================
-// 4. 结果弹窗 (这就是之前缺失的 showModal)
+// 5. 结果弹窗（队列式，一次只显示一个）
 // ==========================================
+const modalQueue = [];
+let isModalOpen = false;
+
 function showModal(originalUrl, translatedUrl) {
+  if (isModalOpen) {
+    // 已有弹窗打开，排队等待
+    modalQueue.push({ originalUrl, translatedUrl });
+    return;
+  }
+  _renderModal(originalUrl, translatedUrl);
+}
+
+function _renderModal(originalUrl, translatedUrl) {
+  isModalOpen = true;
+
   const host = document.createElement('div');
   const shadow = host.attachShadow({ mode: 'open' });
 
@@ -277,10 +316,14 @@ function showModal(originalUrl, translatedUrl) {
   const container = document.createElement('div');
   container.className = 'modal-overlay';
 
+  const queueInfo = modalQueue.length > 0
+    ? ` <span style="font-size:13px;color:#9CA3AF;font-weight:400;">(还有 ${modalQueue.length} 张待查看)</span>`
+    : "";
+
   container.innerHTML = `
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title">✨ AI 翻译完成</h3>
+        <h3 class="modal-title">✨ AI 翻译完成${queueInfo}</h3>
       </div>
       
       <div class="compare-area">
@@ -296,17 +339,26 @@ function showModal(originalUrl, translatedUrl) {
       </div>
 
       <div class="actions">
-        <button id="cancelBtn" class="btn-secondary">取消</button>
+        <button id="cancelBtn" class="btn-secondary">关闭</button>
         <button id="downloadBtn" class="btn-secondary">💾 下载图片</button>
         <button id="replaceBtn" class="btn-primary">🔄 替换原图</button>
       </div>
     </div>
   `;
 
-  // 事件绑定
-  container.querySelector('#cancelBtn').onclick = () => host.remove();
+  function closeModal() {
+    host.remove();
+    isModalOpen = false;
+    // 显示队列中的下一个
+    if (modalQueue.length > 0) {
+      const next = modalQueue.shift();
+      _renderModal(next.originalUrl, next.translatedUrl);
+    }
+  }
 
-  // 下载图片 — 通过 background.js 的 chrome.downloads API
+  container.querySelector('#cancelBtn').onclick = closeModal;
+
+  // 下载
   container.querySelector('#downloadBtn').onclick = () => {
     const [header, b64] = translatedUrl.split(",");
     const binary = atob(b64);
@@ -320,12 +372,11 @@ function showModal(originalUrl, translatedUrl) {
       url: blobUrl,
       filename: "translated_" + Date.now() + ".png",
     }, () => {
-      // 延迟释放 blob URL，确保下载开始后再回收
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     });
   };
 
-  // 替换页面上的原图（不关闭弹窗）
+  // 替换原图
   container.querySelector('#replaceBtn').onclick = () => {
     const imgs = document.querySelectorAll(`img[src="${originalUrl}"]`);
     imgs.forEach(img => { img.src = translatedUrl; });
@@ -335,11 +386,9 @@ function showModal(originalUrl, translatedUrl) {
 
   shadow.appendChild(container);
 
-  // 尝试挂载到顶层窗口, 如果不行就挂载到当前 iframe
   try {
     window.top.document.body.appendChild(host);
   } catch (e) {
-    console.log("挂载到 Top 失败，降级显示");
     document.body.appendChild(host);
   }
 }
