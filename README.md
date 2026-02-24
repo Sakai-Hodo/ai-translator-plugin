@@ -2,7 +2,7 @@
 
 一款基于 AI 的图片翻译 Chrome 浏览器扩展。悬浮在任意网页图片上，一键将图中文字翻译为目标语言，保持原有排版和设计风格不变。
 
-![Version](https://img.shields.io/badge/Version-1.0.1-blue)
+![Version](https://img.shields.io/badge/Version-1.0.2-blue)
 ![Chrome Extension](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
@@ -97,6 +97,10 @@ Content Script（队列式弹窗展示）
 - **并发翻译** + **队列弹窗**，多图翻译不丢失
 
 ## 📋 更新日志
+
+### v1.0.2
+- ✅ 弹窗标题栏新增 ✕ 关闭按钮
+- ✅ 新增 🔁 重试按钮，一键重新翻译
 
 ### v1.0.1
 - ✅ 支持多图片并发翻译
