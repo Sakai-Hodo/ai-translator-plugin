@@ -2,7 +2,7 @@
 
 一款基于 AI 的图片翻译 Chrome 浏览器扩展。**本分支为 Shoplazza 专用版**，在通用版基础上增加了 Shoplazza 商品描述图片批量翻译功能。
 
-![Version](https://img.shields.io/badge/Version-2.0.0-blue)
+![Version](https://img.shields.io/badge/Version-2.1.0-blue)
 ![Chrome Extension](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Shoplazza](https://img.shields.io/badge/Shoplazza-专用版-purple)
@@ -87,6 +87,10 @@ ai-translator-plugin/
 ```
 
 ## 📋 更新日志
+
+### v2.1.0
+- 🔒 悬浮翻译限制为仅在右侧编辑器 iframe（body_html_ifr）内激活
+- 🔒 插件作用域收窄至 Shoplazza 翻译页面，其他网页不再加载
 
 ### v2.0.0 (Shoplazza 版)
 - 🆕 Shoplazza 商品描述图片批量翻译
