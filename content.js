@@ -62,20 +62,7 @@ function showToast(message, type = "info", duration = 4000) {
 let hoverBtnHost = null;
 let hoverTimeout = null;
 
-const LANGUAGES = [
-  { value: "English", label: "🇺🇸 英语" },
-  { value: "Chinese", label: "🇨🇳 中文" },
-  { value: "Japanese", label: "🇯🇵 日语" },
-  { value: "Korean", label: "🇰🇷 韩语" },
-  { value: "French", label: "🇫🇷 法语" },
-  { value: "German", label: "🇩🇪 德语" },
-  { value: "Spanish", label: "🇪🇸 西班牙语" },
-  { value: "Portuguese", label: "🇧🇷 葡萄牙语" },
-  { value: "Russian", label: "🇷🇺 俄语" },
-  { value: "Arabic", label: "🇸🇦 阿拉伯语" },
-  { value: "Thai", label: "🇹🇭 泰语" },
-  { value: "Vietnamese", label: "🇻🇳 越南语" },
-];
+// LANGUAGES 已移至 utils.js 共享
 
 function createHoverButton(img) {
   if (hoverBtnHost && hoverBtnHost.dataset.imgSrc === img.src) return;
