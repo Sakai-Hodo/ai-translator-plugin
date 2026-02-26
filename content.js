@@ -1,130 +1,21 @@
-// content.js - 支持多图片并发翻译
+// content.js - 支持多图片并发翻译 + Toast 通知
 
 console.log("🚀 AI 翻译插件已就绪 (Frame: " + window.name + ")");
 
 // ==========================================
-// 1. 样式配置 (Shadow DOM)
+// 1. 样式配置 (Shadow DOM 用, fetch + inline 注入, 兼容 iframe CSP)
 // ==========================================
-const STYLES = `
-  /* 悬浮工具栏容器 */
-  .ai-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+let _cachedCSS = "";
+fetch(chrome.runtime.getURL("content.css"))
+  .then((r) => r.text())
+  .then((css) => { _cachedCSS = css; })
+  .catch(() => { });
 
-  /* 语言下拉列表 */
-  .lang-select {
-    background: white;
-    color: #374151;
-    border: 1px solid #D1D5DB;
-    border-radius: 4px;
-    padding: 5px 8px;
-    font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    outline: none;
-    appearance: auto;
-  }
-  .lang-select:hover { border-color: #4F46E5; }
-  .lang-select:focus { border-color: #4F46E5; box-shadow: 0 0 0 2px rgba(79,70,229,0.3); }
-
-  /* 悬浮按钮样式 */
-  .ai-btn {
-    background: #4F46E5;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-family: system-ui, -apple-system, sans-serif;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    transition: transform 0.2s, background 0.2s;
-    white-space: nowrap;
-  }
-  .ai-btn:hover { background: #4338CA; transform: translateY(-1px); }
-  .ai-btn:disabled { background: #9CA3AF; cursor: not-allowed; transform: none; }
-
-  /* 结果弹窗样式 */
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    z-index: 2147483647;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-box {
-    background: white;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    width: 700px;
-    max-width: 90vw;
-    font-family: sans-serif;
-    animation: fadeIn 0.2s ease-out;
-  }
-  @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-  
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  .modal-title { margin: 0; font-size: 20px; color: #111827; font-weight: 600; }
-  
-  .compare-area {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    background: #F9FAFB;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 24px;
-  }
-  .img-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
-  .img-col img { 
-    max-width: 100%; 
-    max-height: 250px; 
-    object-fit: contain; 
-    border-radius: 6px;
-    border: 1px solid #E5E7EB;
-    background: white;
-  }
-  .img-col span { margin-top: 10px; font-size: 13px; color: #6B7280; font-weight: 500; }
-  .arrow { font-size: 24px; color: #9CA3AF; }
-  
-  .close-btn {
-    width: 28px; height: 28px; border-radius: 6px; border: 1px solid #E5E7EB;
-    background: white; color: #9CA3AF; font-size: 16px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.15s; flex-shrink: 0;
-  }
-  .close-btn:hover { background: #FEE2E2; border-color: #FCA5A5; color: #EF4444; }
-
-  .actions { display: flex; justify-content: flex-end; gap: 12px; }
-  .btn-primary {
-    background: #4F46E5; color: white; border: none; padding: 10px 20px;
-    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;
-  }
-  .btn-primary:hover { background: #4338CA; }
-  .btn-primary:disabled { background: #9CA3AF; cursor: not-allowed; }
-  .btn-secondary {
-    background: white; color: #374151; border: 1px solid #D1D5DB; padding: 10px 20px;
-    border-radius: 6px; cursor: pointer; font-size: 14px;
-  }
-  .btn-secondary:hover { background: #F3F4F6; }
-  .btn-retry {
-    background: #F59E0B; color: white; border: none; padding: 10px 20px;
-    border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;
-  }
-  .btn-retry:hover { background: #D97706; }
-  .btn-retry:disabled { background: #9CA3AF; cursor: not-allowed; }
-`;
+function createStyleElement() {
+  const style = document.createElement("style");
+  style.textContent = _cachedCSS;
+  return style;
+}
 
 // ==========================================
 // 2. 翻译状态追踪
@@ -133,9 +24,58 @@ const STYLES = `
 const translatingImages = new Map();
 
 // ==========================================
-// 3. 悬浮按钮逻辑（支持多图并发）
+// 3. Toast 通知系统
+// ==========================================
+let toastHost = null;
+let toastContainer = null;
+
+function ensureToastHost() {
+  if (toastHost && document.body.contains(toastHost)) return;
+  toastHost = document.createElement("div");
+  const shadow = toastHost.attachShadow({ mode: "open" });
+  shadow.appendChild(createStyleElement());
+  toastContainer = document.createElement("div");
+  toastContainer.className = "toast-container";
+  shadow.appendChild(toastContainer);
+  document.body.appendChild(toastHost);
+}
+
+function showToast(message, type = "info", duration = 4000) {
+  ensureToastHost();
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  const icons = { info: "ℹ️", success: "✅", error: "❌", loading: "⏳" };
+  toast.innerHTML = `<span>${icons[type] || icons.info}</span><span>${message}</span>`;
+  toastContainer.appendChild(toast);
+  if (duration > 0) {
+    setTimeout(() => {
+      toast.style.animation = "toastOut 0.3s ease-in forwards";
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  }
+  return toast;
+}
+
+// ==========================================
+// 4. 悬浮按钮逻辑（支持多图并发）
 // ==========================================
 let hoverBtnHost = null;
+let hoverTimeout = null;
+
+const LANGUAGES = [
+  { value: "English", label: "🇺🇸 英语" },
+  { value: "Chinese", label: "🇨🇳 中文" },
+  { value: "Japanese", label: "🇯🇵 日语" },
+  { value: "Korean", label: "🇰🇷 韩语" },
+  { value: "French", label: "🇫🇷 法语" },
+  { value: "German", label: "🇩🇪 德语" },
+  { value: "Spanish", label: "🇪🇸 西班牙语" },
+  { value: "Portuguese", label: "🇧🇷 葡萄牙语" },
+  { value: "Russian", label: "🇷🇺 俄语" },
+  { value: "Arabic", label: "🇸🇦 阿拉伯语" },
+  { value: "Thai", label: "🇹🇭 泰语" },
+  { value: "Vietnamese", label: "🇻🇳 越南语" },
+];
 
 function createHoverButton(img) {
   if (hoverBtnHost && hoverBtnHost.dataset.imgSrc === img.src) return;
@@ -147,36 +87,32 @@ function createHoverButton(img) {
   // 已经翻译完成的图片不再显示按钮
   if (state === "done") return;
 
-  const host = document.createElement('div');
+  const host = document.createElement("div");
   host.dataset.imgSrc = imgSrc;
-  const shadow = host.attachShadow({ mode: 'open' });
+  const shadow = host.attachShadow({ mode: "open" });
+  shadow.appendChild(createStyleElement());
 
-  const style = document.createElement('style');
-  style.textContent = STYLES;
-  shadow.appendChild(style);
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'ai-toolbar';
+  const toolbar = document.createElement("div");
+  toolbar.className = "ai-toolbar";
 
   // 语言下拉列表
-  const langSelect = document.createElement('select');
-  langSelect.className = 'lang-select';
-  const languages = [
-    { value: 'English', label: '🇺🇸 英语' },
-    { value: 'Chinese', label: '🇨🇳 中文' },
-    { value: 'Japanese', label: '🇯🇵 日语' },
-    { value: 'French', label: '🇫🇷 法语' },
-  ];
-  languages.forEach(lang => {
-    const opt = document.createElement('option');
+  const langSelect = document.createElement("select");
+  langSelect.className = "lang-select";
+  LANGUAGES.forEach((lang) => {
+    const opt = document.createElement("option");
     opt.value = lang.value;
     opt.textContent = lang.label;
     langSelect.appendChild(opt);
   });
 
+  // 读取上次选择的语言
+  chrome.storage.local.get(["lastLanguage"], (data) => {
+    if (data.lastLanguage) langSelect.value = data.lastLanguage;
+  });
+
   // 翻译按钮
-  const btn = document.createElement('button');
-  btn.className = 'ai-btn';
+  const btn = document.createElement("button");
+  btn.className = "ai-btn";
 
   // 如果正在翻译，按钮显示进度并禁用
   if (state === "translating") {
@@ -190,15 +126,20 @@ function createHoverButton(img) {
   toolbar.appendChild(langSelect);
   toolbar.appendChild(btn);
 
-  // 计算位置
+  // 使用 fixed 定位，左上角偏移（top +45 避开编辑器 Alt 按钮）
   const rect = img.getBoundingClientRect();
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
-  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft || document.body.scrollLeft || 0;
+  host.style.position = "fixed";
+  host.style.top = `${rect.top + 45}px`;
+  host.style.left = `${rect.left + 10}px`;
+  host.style.zIndex = "2147483647";
 
-  host.style.position = 'absolute';
-  host.style.top = `${rect.top + scrollTop + 10}px`;
-  host.style.left = `${rect.left + scrollLeft + 10}px`;
-  host.style.zIndex = '2147483647';
+  // hover 到按钮上时取消自动隐藏
+  host.addEventListener("mouseenter", () => clearTimeout(hoverTimeout));
+  host.addEventListener("mouseleave", (e) => {
+    const related = e.relatedTarget;
+    if (related && related.tagName === "IMG" && related.src === imgSrc) return;
+    hoverTimeout = setTimeout(removeHoverButton, 300);
+  });
 
   // 点击触发翻译
   btn.onclick = (e) => {
@@ -208,6 +149,8 @@ function createHoverButton(img) {
     btn.disabled = true;
     langSelect.disabled = true;
     const targetLang = langSelect.value;
+    // 记住语言选择
+    chrome.storage.local.set({ lastLanguage: targetLang });
     handleTranslate(imgSrc, targetLang);
   };
 
@@ -221,33 +164,55 @@ function removeHoverButton() {
     hoverBtnHost.remove();
     hoverBtnHost = null;
   }
+  clearTimeout(hoverTimeout);
 }
 
-// 监听鼠标移动
-document.addEventListener('mouseover', (e) => {
-  const target = e.target;
-  if (target === hoverBtnHost || (hoverBtnHost && hoverBtnHost.contains(target))) return;
+// 监听鼠标移入
+document.addEventListener(
+  "mouseover",
+  (e) => {
+    const target = e.target;
+    if (
+      target === hoverBtnHost ||
+      (hoverBtnHost && hoverBtnHost.contains(target))
+    )
+      return;
 
-  if (target.tagName === 'IMG') {
-    const rect = target.getBoundingClientRect();
-    if (rect.width > 20 && rect.height > 20) {
-      createHoverButton(target);
+    if (target.tagName === "IMG") {
+      const rect = target.getBoundingClientRect();
+      if (rect.width > 20 && rect.height > 20) {
+        clearTimeout(hoverTimeout);
+        createHoverButton(target);
+      }
     }
-  }
-}, true);
+  },
+  true
+);
+
+// 监听鼠标移出（延迟移除）
+document.addEventListener(
+  "mouseout",
+  (e) => {
+    if (e.target.tagName !== "IMG") return;
+    const related = e.relatedTarget;
+    if (related === hoverBtnHost) return;
+    if (hoverBtnHost && hoverBtnHost.contains(related)) return;
+    hoverTimeout = setTimeout(removeHoverButton, 300);
+  },
+  true
+);
 
 // 滚动时隐藏
-document.addEventListener('scroll', removeHoverButton, true);
+document.addEventListener("scroll", removeHoverButton, true);
 
 // ==========================================
-// 4. AI 翻译（支持并发，互不干扰）
+// 5. AI 翻译（支持并发，互不干扰）
 // ==========================================
 
 async function handleTranslate(srcUrl, targetLang) {
-  // 记录目标语言（重试时使用）
-  lastTargetLanguage = targetLang;
   // 标记为翻译中
   translatingImages.set(srcUrl, "translating");
+  const loadingToast = showToast("正在翻译图片...", "loading", 0);
 
   try {
     // 检查配置
@@ -260,7 +225,8 @@ async function handleTranslate(srcUrl, targetLang) {
     if (!configOk) {
       translatingImages.delete(srcUrl);
       removeHoverButton();
-      alert("⚠️ 请先配置 API Key！\n右键点击插件图标 → 选项，或点击插件图标打开设置。");
+      loadingToast.remove();
+      showToast("请先配置 API Key！点击插件图标 → 设置", "error", 6000);
       return;
     }
 
@@ -283,6 +249,8 @@ async function handleTranslate(srcUrl, targetLang) {
     // 标记为已完成
     translatingImages.set(srcUrl, "done");
     removeHoverButton();
+    loadingToast.remove();
+    showToast("翻译完成！", "success", 3000);
 
     // 保存记录
     chrome.runtime.sendMessage({
@@ -293,50 +261,45 @@ async function handleTranslate(srcUrl, targetLang) {
       sourcePageUrl: window.location.href,
     });
 
-    // 显示结果弹窗
-    showModal(srcUrl, result.translatedDataUrl);
-
+    // 显示结果弹窗（传入 targetLang 用于重试）
+    showModal(srcUrl, result.translatedDataUrl, targetLang);
   } catch (error) {
     console.error("Translation Error:", error);
     translatingImages.delete(srcUrl);
     removeHoverButton();
-    alert("处理失败: " + error.message);
+    loadingToast.remove();
+    showToast("翻译失败: " + error.message, "error", 6000);
   }
 }
 
 // ==========================================
-// 5. 结果弹窗（队列式，一次只显示一个）
+// 6. 结果弹窗（队列式，一次只显示一个）
 // ==========================================
 const modalQueue = [];
 let isModalOpen = false;
 
-// 记录最后使用的目标语言，用于重试
-let lastTargetLanguage = "English";
-
-function showModal(originalUrl, translatedUrl) {
+function showModal(originalUrl, translatedUrl, targetLang) {
   if (isModalOpen) {
-    modalQueue.push({ originalUrl, translatedUrl });
+    modalQueue.push({ originalUrl, translatedUrl, targetLang });
     return;
   }
-  _renderModal(originalUrl, translatedUrl);
+  _renderModal(originalUrl, translatedUrl, targetLang);
 }
 
-function _renderModal(originalUrl, translatedUrl) {
+function _renderModal(originalUrl, translatedUrl, targetLang) {
   isModalOpen = true;
 
-  const host = document.createElement('div');
-  const shadow = host.attachShadow({ mode: 'open' });
+  const host = document.createElement("div");
+  const shadow = host.attachShadow({ mode: "open" });
+  shadow.appendChild(createStyleElement());
 
-  const style = document.createElement('style');
-  style.textContent = STYLES;
-  shadow.appendChild(style);
+  const container = document.createElement("div");
+  container.className = "modal-overlay";
 
-  const container = document.createElement('div');
-  container.className = 'modal-overlay';
-
-  const queueInfo = modalQueue.length > 0
-    ? ` <span style="font-size:13px;color:#9CA3AF;font-weight:400;">(还有 ${modalQueue.length} 张待查看)</span>`
-    : "";
+  const queueInfo =
+    modalQueue.length > 0
+      ? ` <span style="font-size:13px;color:#9CA3AF;font-weight:400;">(还有 ${modalQueue.length} 张待查看)</span>`
+      : "";
 
   container.innerHTML = `
     <div class="modal-box">
@@ -344,7 +307,7 @@ function _renderModal(originalUrl, translatedUrl) {
         <h3 class="modal-title">✨ AI 翻译完成${queueInfo}</h3>
         <button id="closeX" class="close-btn">✕</button>
       </div>
-      
+
       <div class="compare-area">
         <div class="img-col">
           <img src="${originalUrl}">
@@ -371,49 +334,49 @@ function _renderModal(originalUrl, translatedUrl) {
     // 显示队列中的下一个
     if (modalQueue.length > 0) {
       const next = modalQueue.shift();
-      _renderModal(next.originalUrl, next.translatedUrl);
+      _renderModal(next.originalUrl, next.translatedUrl, next.targetLang);
     }
   }
 
-  container.querySelector('#closeX').onclick = closeModal;
+  container.querySelector("#closeX").onclick = closeModal;
 
-  // 重试翻译
-  container.querySelector('#retryBtn').onclick = () => {
-    const retryBtn = container.querySelector('#retryBtn');
-    retryBtn.innerText = '⏳ 重新翻译中...';
+  // 重试翻译 — 使用闭包中的 targetLang，不再依赖全局变量
+  container.querySelector("#retryBtn").onclick = () => {
+    const retryBtn = container.querySelector("#retryBtn");
+    retryBtn.innerText = "⏳ 重新翻译中...";
     retryBtn.disabled = true;
     // 重置图片状态
     translatingImages.delete(originalUrl);
     // 关闭当前弹窗
     closeModal();
-    // 重新发起翻译
-    handleTranslate(originalUrl, lastTargetLanguage);
+    // 重新发起翻译（使用本次 modal 的 targetLang）
+    handleTranslate(originalUrl, targetLang);
   };
 
-  // 下载
-  container.querySelector('#downloadBtn').onclick = () => {
-    const [header, b64] = translatedUrl.split(",");
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: "image/png" });
+  // 下载（使用共享工具函数）
+  container.querySelector("#downloadBtn").onclick = () => {
+    const blob = base64ToBlob(translatedUrl);
     const blobUrl = URL.createObjectURL(blob);
 
-    chrome.runtime.sendMessage({
-      action: "download",
-      url: blobUrl,
-      filename: "translated_" + Date.now() + ".png",
-    }, () => {
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-    });
+    chrome.runtime.sendMessage(
+      {
+        action: "download",
+        url: blobUrl,
+        filename: "translated_" + Date.now() + ".png",
+      },
+      () => {
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      }
+    );
   };
 
-  // 替换原图
-  container.querySelector('#replaceBtn').onclick = () => {
-    const imgs = document.querySelectorAll(`img[src="${originalUrl}"]`);
-    imgs.forEach(img => { img.src = translatedUrl; });
-    container.querySelector('#replaceBtn').innerText = "✅ 已替换";
-    container.querySelector('#replaceBtn').disabled = true;
+  // 替换原图（遍历比较 src 属性，避免 CSS 选择器特殊字符问题）
+  container.querySelector("#replaceBtn").onclick = () => {
+    document.querySelectorAll("img").forEach((img) => {
+      if (img.src === originalUrl) img.src = translatedUrl;
+    });
+    container.querySelector("#replaceBtn").innerText = "✅ 已替换";
+    container.querySelector("#replaceBtn").disabled = true;
   };
 
   shadow.appendChild(container);

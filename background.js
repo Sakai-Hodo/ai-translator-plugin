@@ -246,19 +246,46 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         })();
         return true;
     }
-});
 
-// ---------------------------------------------------------------------------
-// 点击插件图标
-// ---------------------------------------------------------------------------
-chrome.action.onClicked.addListener(async () => {
-    const config = await getConfig();
-    if (!config.apiKey) {
-        // 未配置 → 打开设置页
-        chrome.runtime.openOptionsPage();
-    } else {
-        // 已配置 → 打开历史页
-        chrome.tabs.create({ url: chrome.runtime.getURL("history.html") });
+    // 获取记录数量（供 popup 使用）
+    if (msg.action === "getRecordCount") {
+        (async () => {
+            try {
+                const db = await openDB();
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const req = tx.objectStore(STORE_NAME).count();
+                req.onsuccess = () => sendResponse({ ok: true, count: req.result });
+                req.onerror = () => sendResponse({ ok: true, count: 0 });
+            } catch (err) {
+                sendResponse({ ok: true, count: 0 });
+            }
+        })();
+        return true;
+    }
+
+    // 测试 API 连通性
+    if (msg.action === "testConfig") {
+        (async () => {
+            try {
+                const config = await getConfig();
+                if (!config.apiKey) {
+                    sendResponse({ ok: false, error: "未配置 API Key" });
+                    return;
+                }
+                const resp = await fetch(`${config.baseUrl}/models`, {
+                    headers: { Authorization: `Bearer ${config.apiKey}` },
+                });
+                if (resp.ok) {
+                    sendResponse({ ok: true });
+                } else {
+                    const text = await resp.text();
+                    sendResponse({ ok: false, error: `HTTP ${resp.status}: ${text.slice(0, 100)}` });
+                }
+            } catch (err) {
+                sendResponse({ ok: false, error: err.message });
+            }
+        })();
+        return true;
     }
 });
 
