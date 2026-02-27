@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup">
+        <div class="popup-header">
+            <img src="icon.png" class="popup-icon">
+            <div>
+                <h1>AI Image Translator</h1>
+                <p class="version">v2.1.0</p>
+            </div>
+        </div>
+
+        <div class="status-card">
+            <div class="status-row">
+                <span>API 状态</span>
+                <span id="apiStatus">检查中...</span>
+            </div>
+            <div class="status-row">
+                <span>翻译记录</span>
+                <span id="recordCount">—</span>
+            </div>
+        </div>
+
+        <div class="popup-actions">
+            <button id="settingsBtn" class="popup-btn">⚙️ 设置</button>
+            <button id="historyBtn" class="popup-btn primary">📋 历史</button>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

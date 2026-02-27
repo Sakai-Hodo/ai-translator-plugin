@@ -1,0 +1,106 @@
+/* popup.css — 弹出面板深色主题 */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 300px;
+    background: #0f1117;
+    color: #e4e6ef;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.popup {
+    padding: 20px;
+}
+
+/* ---------- Header ---------- */
+.popup-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.popup-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+}
+
+.popup-header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.version {
+    font-size: 11px;
+    color: #8b8fa3;
+    margin-top: 2px;
+}
+
+/* ---------- Status Card ---------- */
+.status-card {
+    background: #1a1d27;
+    border: 1px solid #2a2e3e;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 6px 0;
+}
+
+.status-row:not(:last-child) {
+    border-bottom: 1px solid #2a2e3e;
+}
+
+.status-row span:first-child {
+    color: #8b8fa3;
+}
+
+/* ---------- Actions ---------- */
+.popup-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.popup-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #2a2e3e;
+    background: #1a1d27;
+    color: #e4e6ef;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.popup-btn:hover {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.popup-btn.primary {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: white;
+}
+
+.popup-btn.primary:hover {
+    background: #818cf8;
+}

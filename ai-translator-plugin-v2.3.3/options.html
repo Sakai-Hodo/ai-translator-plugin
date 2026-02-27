@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 — AI Image Translator</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">⚙️</div>
+            <div>
+                <h1>AI Image Translator <span>设置</span></h1>
+                <p class="subtitle">配置你的 API 信息以开始使用翻译功能</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔑 API 配置</h2>
+            <p class="hint">你需要一个兼容 OpenAI 接口的 API Key。推荐使用中转服务。</p>
+
+            <div class="field">
+                <label for="apiKey">API Key</label>
+                <input type="password" id="apiKey" placeholder="sk-xxxxxxxxxxxx">
+                <button class="toggle-vis" id="toggleKey" title="显示/隐藏">👁️</button>
+            </div>
+
+            <div class="field">
+                <label for="baseUrl">API Base URL</label>
+                <input type="text" id="baseUrl" placeholder="https://oneapi.gemiaude.com/v1">
+            </div>
+
+            <div class="field">
+                <label for="model">模型名称</label>
+                <input type="text" id="model" placeholder="jimeng-4.1">
+            </div>
+        </div>
+
+        <div class="actions">
+            <div id="status" class="status"></div>
+            <div class="actions-right">
+                <button id="testBtn" class="btn-test">🔗 测试连接</button>
+                <button id="saveBtn" class="btn-primary">💾 保存设置</button>
+            </div>
+        </div>
+
+        <div class="card tip-card">
+            <h3>💡 如何获取 API Key？</h3>
+            <ol>
+                <li>访问你的 API 中转服务后台（如 OneAPI）</li>
+                <li>创建一个新的 API Key（以 <code>sk-</code> 开头）</li>
+                <li>将 Key 粘贴到上方输入框</li>
+                <li>Base URL 填写中转服务提供的地址</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+
+</html>
