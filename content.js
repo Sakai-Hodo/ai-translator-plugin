@@ -334,11 +334,24 @@
       );
     };
 
-    // 替换原图（遍历比较 src 属性，避免 CSS 选择器特殊字符问题）
+    // 替换原图（比较 src 属性，更新 src 及 data-mce-src 以防 TinyMCE 还原）
     container.querySelector("#replaceBtn").onclick = () => {
       document.querySelectorAll("img").forEach((img) => {
-        if (img.src === originalUrl) img.src = translatedUrl;
+        if (
+          img.src === originalUrl ||
+          img.getAttribute("src") === originalUrl ||
+          img.getAttribute("data-mce-src") === originalUrl ||
+          decodeURIComponent(img.src) === decodeURIComponent(originalUrl)
+        ) {
+          img.src = translatedUrl;
+          if (img.hasAttribute("data-mce-src")) {
+            img.setAttribute("data-mce-src", translatedUrl);
+          }
+        }
       });
+      // 触发 input 事件，确保 TinyMCE 检测到内容变化，允许保存
+      document.body.dispatchEvent(new Event("input", { bubbles: true }));
+
       container.querySelector("#replaceBtn").innerText = "✅ 已替换";
       container.querySelector("#replaceBtn").disabled = true;
     };

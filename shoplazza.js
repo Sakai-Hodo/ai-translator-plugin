@@ -349,7 +349,13 @@
     // ==========================================
     function insertTranslatedImage(item) {
         if (!item.element || !item.translatedSrc) return;
+
+        // 更新 src 和 data-mce-src 防止 TinyMCE 还原
         item.element.src = item.translatedSrc;
+        if (item.element.hasAttribute("data-mce-src")) {
+            item.element.setAttribute("data-mce-src", item.translatedSrc);
+        }
+
         // 通知 TinyMCE 内容已更改
         const iframe = document.getElementById("body_html_ifr") || document.querySelector("iframe.tox-edit-area__iframe");
         if (iframe?.contentDocument?.body) {

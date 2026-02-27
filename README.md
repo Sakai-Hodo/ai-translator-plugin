@@ -2,7 +2,7 @@
 
 > 一款强大的浏览器插件，支持在网页上直接翻译包含外文的图片，并将原图中的文字无缝替换为目标语言，同时保持原图的设计和排版。本分支为 Shoplazza 定制版本，专为跨境电商优化！
 
-![Version](https://img.shields.io/badge/Version-2.3.0-blue)
+![Version](https://img.shields.io/badge/Version-2.3.2-blue)
 ![Platform](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Shoplazza](https://img.shields.io/badge/Shoplazza-专用版-purple)
@@ -11,12 +11,11 @@
 
 ---
 
-## � v2.3 更新内容 (2026-02-27)
+## v2.3.2 更新内容 (2026-02-27)
 
-- **新增适配**：全面支持 Shoplazza 常规商品管理页面 (`.../admin/smart_apps/python/products/...`)。
-- **页面兼容**：优化了匹配规则和注入逻辑，适配更多 Shoplazza 后台路径，做到多页面通用。
+- **新增适配**：支持 Shoplazza 常规商品管理页面 (`.../admin/smart_apps/python/products/...`)。
 
-*注：v2.2 修复了火山引擎 Seedream 图生图无参考图的 bug，并自动去除了官方水印。*
+*注：v2.2 修复了火山引擎 Seedream 图生图无参考图的 bug，并去除了官方水印。*
 
 ---
 
