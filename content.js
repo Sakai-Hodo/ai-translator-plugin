@@ -1,9 +1,10 @@
 // content.js - Shoplazza 版：仅在右侧编辑器 iframe (body_html_ifr) 中激活悬浮翻译
 
-// 只在目标 iframe 中运行
-if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_ifr") {
-  // 非目标 iframe，跳过初始化
-} else {
+(function () {
+  "use strict";
+
+  // 只在目标 iframe 中运行
+  if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_ifr") return;
 
   console.log("🚀 AI 翻译插件已就绪 (Frame: " + window.name + ")");
 
@@ -11,10 +12,14 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
   // 1. 样式配置 (Shadow DOM 用, fetch + inline 注入, 兼容 iframe CSP)
   // ==========================================
   let _cachedCSS = "";
-  fetch(chrome.runtime.getURL("content.css"))
-    .then((r) => r.text())
-    .then((css) => { _cachedCSS = css; })
-    .catch(() => { });
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", chrome.runtime.getURL("content.css"), false); // 同步
+    xhr.send();
+    if (xhr.status === 200) _cachedCSS = xhr.responseText;
+  } catch (err) {
+    console.warn("⚠️ content.css 加载失败:", err.message);
+  }
 
   function createStyleElement() {
     const style = document.createElement("style");
@@ -87,20 +92,8 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
     const toolbar = document.createElement("div");
     toolbar.className = "ai-toolbar";
 
-    // 语言下拉列表
-    const langSelect = document.createElement("select");
-    langSelect.className = "lang-select";
-    LANGUAGES.forEach((lang) => {
-      const opt = document.createElement("option");
-      opt.value = lang.value;
-      opt.textContent = lang.label;
-      langSelect.appendChild(opt);
-    });
-
-    // 读取上次选择的语言
-    chrome.storage.local.get(["lastLanguage"], (data) => {
-      if (data.lastLanguage) langSelect.value = data.lastLanguage;
-    });
+    // 语言下拉列表（使用 utils.js 共享函数）
+    const langSelect = createLangSelect("lang-select");
 
     // 翻译按钮
     const btn = document.createElement("button");
@@ -207,12 +200,8 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
     const loadingToast = showToast("正在翻译图片...", "loading", 0);
 
     try {
-      // 检查配置
-      const configOk = await new Promise((resolve) => {
-        chrome.runtime.sendMessage({ action: "checkConfig" }, (res) => {
-          resolve(res && res.configured);
-        });
-      });
+      // 检查配置（使用 utils.js 共享函数）
+      const configOk = await checkApiConfig();
 
       if (!configOk) {
         translatingImages.delete(srcUrl);
@@ -222,21 +211,8 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
         return;
       }
 
-      // 发送翻译请求
-      const result = await new Promise((resolve, reject) => {
-        chrome.runtime.sendMessage(
-          { action: "translate", imageUrl: srcUrl, targetLanguage: targetLang },
-          (res) => {
-            if (chrome.runtime.lastError) {
-              reject(new Error(chrome.runtime.lastError.message));
-            } else if (res && res.ok) {
-              resolve(res);
-            } else {
-              reject(new Error(res?.error || "翻译失败"));
-            }
-          }
-        );
-      });
+      // 发送翻译请求（使用 utils.js 共享函数）
+      const result = await sendTranslateRequest(srcUrl, targetLang);
 
       // 标记为已完成
       translatingImages.set(srcUrl, "done");
@@ -244,14 +220,8 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
       loadingToast.remove();
       showToast("翻译完成！", "success", 3000);
 
-      // 保存记录
-      chrome.runtime.sendMessage({
-        action: "saveRecord",
-        originalUrl: srcUrl,
-        translatedB64: result.translatedDataUrl,
-        targetLanguage: targetLang,
-        sourcePageUrl: window.location.href,
-      });
+      // 保存记录（使用 utils.js 共享函数）
+      saveTranslateRecord(srcUrl, result.translatedDataUrl, targetLang, window.location.href);
 
       // 显示结果弹窗（传入 targetLang 用于重试）
       showModal(srcUrl, result.translatedDataUrl, targetLang);
@@ -380,4 +350,4 @@ if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_if
     }
   }
 
-} // end else (body_html_ifr guard)
+})();

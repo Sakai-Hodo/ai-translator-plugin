@@ -1,8 +1,14 @@
-# ✨ AI Image Translator — Chrome Extension (Shoplazza 版)
+# ✨# AI Image Translator 2.2 (Shoplazza 版)
 
-一款基于 AI 的图片翻译 Chrome 浏览器扩展。**本分支为 Shoplazza 专用版**，在通用版基础上增加了 Shoplazza 商品描述图片批量翻译功能。
+一款强大的浏览器插件，可以在网页上直接翻译包含外文的图片，并将原图中的文字无缝替换为目标语言，同时保持原图的设计和排版。
+特供 Shoplazza 版本，专为跨境电商优化！
 
-![Version](https://img.shields.io/badge/Version-2.1.0-blue)
+## 🔥 v2.2 更新内容 (2026-02-27)
+* **核心修复**：修复火山引擎 Seedream (4.5/5.0) 模型图生图无法传入参考图的问题，确保精准翻译图片文字而不改变原图。
+* **水印移除**：自动关闭 Seedream 生成图片的官方水印。
+* 移除测试用参考强度参数，提升 API 兼容性。
+
+![Version](https://img.shields.io/badge/Version-2.2.0-blue)
 ![Chrome Extension](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Shoplazza](https://img.shields.io/badge/Shoplazza-专用版-purple)

@@ -61,7 +61,7 @@ def image_to_data_url(img: Image.Image) -> str:
 # ---------------------------------------------------------------------------
 # SeedEdit: translate image in one API call
 # ---------------------------------------------------------------------------
-def seededit_translate(img: Image.Image, target_language: str) -> str:
+def seededit_translate(img: Image.Image, target_language: str, image_url: str = "") -> str:
     """
     Call SeedEdit to translate all text in the image to target_language.
     Returns base64-encoded translated image data URL.
@@ -77,15 +77,31 @@ def seededit_translate(img: Image.Image, target_language: str) -> str:
     buf.name = "image.png"  # OpenAI SDK 需要 .name 属性
 
     try:
-        # 方式1: 标准 OpenAI images.edit 接口
-        response = client.images.edit(
-            model=SEEDEDIT_MODEL,
-            image=buf,
-            prompt=prompt,
-            response_format="b64_json",
-        )
+        # 针对火山引擎 seedream 模型：使用 image_urls（公网URL数组）实现图生图
+        if "seedream" in SEEDEDIT_MODEL.lower():
+            response = client.images.generate(
+                model=SEEDEDIT_MODEL,
+                prompt=prompt,
+                response_format="url",
+                size="2K",
+                extra_body={
+                    "image": image_url,  # 单图参考：传入原始图片的公网 URL（字符串）
+                    "watermark": False,
+                },
+            )
+        else:
+            # 方式1: 标准 OpenAI images.edit 接口
+            response = client.images.edit(
+                model=SEEDEDIT_MODEL,
+                image=buf,
+                prompt=prompt,
+                response_format="b64_json",
+            )
     except Exception as e:
-        print(f"⚠️ images.edit failed ({e}), falling back to images.generate with extra_body...")
+        print(f"⚠️ images.edit or generate failed ({e}), falling back to images.generate with extra_body...")
+        if "seedream" in SEEDEDIT_MODEL.lower():
+            raise RuntimeError(f"Seedream API failed: {e}")
+            
         # 方式2: 有些中转站只支持 images.generate + 非标准 image 字段
         img_b64 = image_to_base64(img)
         response = client.images.generate(
@@ -96,8 +112,12 @@ def seededit_translate(img: Image.Image, target_language: str) -> str:
         )
 
     if response.data and len(response.data) > 0:
-        result_b64 = response.data[0].b64_json
-        return f"data:image/png;base64,{result_b64}"
+        data_obj = response.data[0]
+        if hasattr(data_obj, "b64_json") and data_obj.b64_json:
+            result_b64 = data_obj.b64_json
+            return f"data:image/png;base64,{result_b64}"
+        elif hasattr(data_obj, "url") and data_obj.url:
+            return data_obj.url
 
     raise RuntimeError("SeedEdit API returned no images")
 
@@ -123,8 +143,8 @@ def translate():
 
         # Step 2: SeedEdit translate
         print(f"🎨 Calling SeedEdit to translate to {target_language}...")
-        translated_data_url = seededit_translate(original, target_language)
-        print(f"✅ Done! Base64 length: {len(translated_data_url)}")
+        translated_data_url = seededit_translate(original, target_language, image_url=image_url)
+        print(f"✅ Done! Result length: {len(translated_data_url)}")
 
         return jsonify({
             "status": "success",

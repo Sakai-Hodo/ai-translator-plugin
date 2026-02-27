@@ -32,3 +32,72 @@ var LANGUAGES = [
     { value: "Thai", label: "🇹🇭 泰语" },
     { value: "Vietnamese", label: "🇻🇳 越南语" },
 ];
+
+// ---------------------------------------------------------------------------
+// 共享的 background 通信函数（content.js 和 shoplazza.js 共用）
+// ---------------------------------------------------------------------------
+
+/**
+ * 发送翻译请求到 background
+ * @param {string} imageUrl - 原图 URL
+ * @param {string} targetLanguage - 目标语言
+ * @returns {Promise<{ok: boolean, translatedDataUrl: string}>}
+ */
+function sendTranslateRequest(imageUrl, targetLanguage) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+            { action: "translate", imageUrl, targetLanguage },
+            (res) => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else if (res?.ok) resolve(res);
+                else reject(new Error(res?.error || "翻译失败"));
+            }
+        );
+    });
+}
+
+/**
+ * 检查 API 是否已配置
+ * @returns {Promise<boolean>}
+ */
+function checkApiConfig() {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ action: "checkConfig" }, (res) => {
+            resolve(res && res.configured);
+        });
+    });
+}
+
+/**
+ * 保存翻译记录到 IndexedDB
+ */
+function saveTranslateRecord(originalUrl, translatedB64, targetLanguage, sourcePageUrl) {
+    chrome.runtime.sendMessage({
+        action: "saveRecord",
+        originalUrl,
+        translatedB64,
+        targetLanguage,
+        sourcePageUrl,
+    });
+}
+
+/**
+ * 创建语言选择器并自动恢复上次选择
+ * @param {string} [className] - CSS class name
+ * @returns {HTMLSelectElement}
+ */
+function createLangSelect(className) {
+    const select = document.createElement("select");
+    if (className) select.className = className;
+    LANGUAGES.forEach((lang) => {
+        const opt = document.createElement("option");
+        opt.value = lang.value;
+        opt.textContent = lang.label;
+        select.appendChild(opt);
+    });
+    chrome.storage.local.get(["lastLanguage"], (data) => {
+        if (data.lastLanguage) select.value = data.lastLanguage;
+    });
+    return select;
+}
+
