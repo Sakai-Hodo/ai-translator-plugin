@@ -29,7 +29,7 @@
     function init() {
         // 持续轮询：SPA 切换商品时编辑器会重建，需要重新注入按钮
         setInterval(() => {
-            const iframe = document.getElementById("body_html_ifr");
+            const iframe = document.getElementById("body_html_ifr") || document.querySelector("iframe.tox-edit-area__iframe");
             // 按钮不在 DOM 中（首次或被 SPA 移除）→ 重新注入
             if (iframe && (!triggerBtn || !document.body.contains(triggerBtn))) {
                 triggerBtn = null;
@@ -86,7 +86,7 @@
     }
 
     function handleTriggerClick() {
-        const iframe = document.getElementById("body_html_ifr");
+        const iframe = document.getElementById("body_html_ifr") || document.querySelector("iframe.tox-edit-area__iframe");
         const body = iframe?.contentDocument?.body;
 
         if (!body) {
@@ -96,13 +96,15 @@
 
         const images = extractImages();
 
-        // 没有文字也没有图片 → 编辑器确实为空
-        if (!body.textContent.trim() && images.length === 0) {
+        const isPythonProductsPage = window.location.href.includes('/python/products/');
+
+        // 旧版页面逻辑：如果连文字都没有，提示先翻译文字
+        if (!isPythonProductsPage && !body.textContent.trim() && images.length === 0) {
             showTip("⚠️ 请先翻译文本部分");
             return;
         }
 
-        // 有文字但没图片
+        // 统一检测：只要没有图片，就拦截
         if (images.length === 0) {
             showTip("⚠️ 请检查描述中是否包含图片");
             return;
@@ -116,7 +118,7 @@
     // 3. 提取图片
     // ==========================================
     function extractImages() {
-        const iframe = document.getElementById("body_html_ifr");
+        const iframe = document.getElementById("body_html_ifr") || document.querySelector("iframe.tox-edit-area__iframe");
         if (!iframe?.contentDocument) return [];
         const imgs = iframe.contentDocument.querySelectorAll("img");
         return Array.from(imgs)
@@ -349,7 +351,7 @@
         if (!item.element || !item.translatedSrc) return;
         item.element.src = item.translatedSrc;
         // 通知 TinyMCE 内容已更改
-        const iframe = document.getElementById("body_html_ifr");
+        const iframe = document.getElementById("body_html_ifr") || document.querySelector("iframe.tox-edit-area__iframe");
         if (iframe?.contentDocument?.body) {
             iframe.contentDocument.body.dispatchEvent(
                 new Event("input", { bubbles: true })

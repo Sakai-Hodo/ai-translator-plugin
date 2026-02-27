@@ -3,8 +3,10 @@
 (function () {
   "use strict";
 
-  // 只在目标 iframe 中运行
-  if (window.frameElement?.id !== "body_html_ifr" && window.name !== "body_html_ifr") return;
+  // 只在目标 iframe 中运行 (兼容旧版 body_html_ifr 和新版 tox-edit-area__iframe)
+  const isOldIframe = window.frameElement?.id === "body_html_ifr" || window.name === "body_html_ifr";
+  const isNewIframe = window.frameElement?.classList.contains("tox-edit-area__iframe") || document.body?.id === "tinymce";
+  if (!isOldIframe && !isNewIframe) return;
 
   console.log("🚀 AI 翻译插件已就绪 (Frame: " + window.name + ")");
 
