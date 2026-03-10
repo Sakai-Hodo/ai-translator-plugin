@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SaaS AI Image Translator",
-  "version": "1.1.0",
+  "version": "2.3.4",
   "description": "Hover over product images to translate them using AI.",
   "permissions": [
     "activeTab",
@@ -23,8 +23,8 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "*://*.myshoplaza.com/admin/smart_apps/uakari/*",
+        "*://*.myshoplaza.com/admin/smart_apps/python/products/*"
       ],
       "js": [
         "utils.js",
@@ -33,16 +33,27 @@
       "all_frames": true,
       "match_about_blank": true,
       "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "*://*.myshoplaza.com/admin/smart_apps/uakari/*",
+        "*://*.myshoplaza.com/admin/smart_apps/python/products/*"
+      ],
+      "js": [
+        "utils.js",
+        "shoplazza.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
       "resources": [
-        "content.css"
+        "content.css",
+        "shoplazza.css"
       ],
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "*://*.myshoplaza.com/*"
       ]
     }
   ],

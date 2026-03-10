@@ -1,147 +1,121 @@
-# ✨ AI Image Translator — Chrome Extension
+# ✨ AI Image Translator (Shoplazza 专版)
 
-一款基于 AI 的图片翻译 Chrome 浏览器扩展。悬浮在任意网页图片上，一键将图中文字翻译为目标语言，保持原有排版和设计风格不变。
+> 一款强大的浏览器插件，支持在网页上直接翻译包含外文的图片，并将原图中的文字无缝替换为目标语言，同时保持原图的设计和排版。本分支为 Shoplazza 定制版本，专为跨境电商优化！
 
-![Version](https://img.shields.io/badge/Version-1.1.0-blue)
-![Chrome Extension](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
+![Version](https://img.shields.io/badge/Version-2.3.4-blue)
+![Platform](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![Shoplazza](https://img.shields.io/badge/Shoplazza-专用版-purple)
 
-## 🎯 功能特点
+📌 **说明**：通用版请切换至 [main 分支](https://github.com/Sakai-Hodo/ai-translator-plugin/tree/main)。
 
-- 🖱️ **悬浮翻译** — 鼠标移到网页图片上，自动出现翻译按钮
-- 🌍 **多语言支持** — 支持翻译为英/中/日/韩/法/德/西/葡/俄/阿/泰/越 12 种语言
-- 🔄 **替换原图** — 一键将翻译后的图片替换到页面上
-- 💾 **下载译图** — 将翻译结果保存为 PNG 文件
-- 📋 **翻译历史** — 自动保存所有翻译记录，点击插件图标查看画廊
-- 🚀 **多图并发** — 可同时翻译多张图片，结果按队列依次展示
-- 🔔 **Toast 通知** — 翻译进度实时反馈，不打断操作
-- 💡 **智能记忆** — 自动记住上次选择的目标语言
-- 🔗 **API 测试** — 设置页一键测试 API 连通性
-- 🧩 **弹出面板** — 点击图标快速查看状态、进入设置和历史
-- 🌙 **深色主题** — 历史记录、设置页和弹出面板均采用深色主题设计
-- 🔒 **隐私安全** — 所有数据本地存储（IndexedDB），不上传云端
-- ☁️ **无需后端** — 纯浏览器端运行，无需部署服务器
+---
 
-## 📸 使用演示
+## v2.3.4 更新内容 (2026-03-10)
 
-1. 在任意网页上，将鼠标悬浮到图片上
-2. 选择目标语言，点击 **✨ AI 翻译**
-3. 等待翻译完成，在弹窗中查看对比效果
-4. 选择 **替换原图** 或 **下载图片**
+- **修复翻译按钮无法再次触发**：修复单张图片翻译完成后，关闭结果弹窗导致该图片无法再次触发翻译按钮的问题，现在关闭弹窗后可继续对同一图片发起新的翻译。
 
-> 💡 可以同时对多张图片发起翻译，翻译结果会按完成顺序依次弹窗展示。
+## v2.3.3 更新内容 (2026-02-27)
 
-## 🚀 安装与配置
+- **下载模块重构**：彻底修复跨域 (CORS) 与 iframe 安全限制导致的图片下载无后缀或失败问题。现由后台 Service Worker 统一处理所有格式（Base64 / HTTP）图片的清洗转换及底层原生下载，确保文件名和格式绝对正确。
 
-### 1. 安装扩展
+## v2.3.2 更新内容 (2026-02-27)
+
+- **新增适配**：支持 Shoplazza 常规商品管理页面 (`.../admin/smart_apps/python/products/...`)。
+
+*注：v2.2 修复了火山引擎 Seedream 图生图无参考图的 bug，并去除了官方水印。*
+
+---
+
+## 🎯 核心功能
+
+### � Shoplazza 专属优化
+- 📸 **一键批量处理**：在商品编辑/翻译页面，一键提取并翻译所有描述图片。
+- ☑️ **灵活选择**：支持弹窗内勾选需要的图片进行局部或批量翻译。
+- 🔍 **高清预览**：点击缩略图即可放大查看「原图 vs 译图」对比细节。
+- 📥 **一键插入**：翻译完成后，可一键将其替换回 Shoplazza 富文本编辑器。
+- ⚡ **无感兼容**：支持 SPA（单页面应用）架构，切换商品自动重新注入插件。
+- ⚠️ **智能提示**：当内容为空或无图片时，智能提示先翻译文本或添加图片。
+
+### 🌍 通用翻译能力
+- 🖱️ **悬浮即翻**：鼠标悬停网页图片，自动唤起翻译按钮。
+- 🌐 **多语种支持**：支持 英/中/日/韩/法/德/西/葡/俄/阿/泰/越 12 种语言。
+- 🔄 **灵活保存**：支持直接替换网页原图，或将翻译后的图片下载至本地。
+- 📋 **翻译画廊**：历史记录自动保存，随时可溯。
+- 🚀 **高并发处理**：支持多图同时翻译，搭配精美 Toast 状态提示。
+
+---
+
+## 📸 使用指南
+
+### 场景一：Shoplazza 批量翻译
+1. 进入 Shoplazza 后台页面（如翻译页或商品处理页）。
+2. 在「商品描述」编辑器上方找到 **📸 翻译描述图片** 按钮。
+3. 点击呼出图片面板，勾选目标图片并选择语言。
+4. 点击 **✨ 一键翻译** 等待完成。
+5. 点击 **📥 插入**，译图将自动覆盖回编辑器中。
+
+### 场景二：网页悬浮单点翻译
+1. 将鼠标悬停在页面上的任意图片。
+2. 在出现的插件按钮选定语言，点击 **✨ AI 翻译**。
+3. 预览翻译效果，选择 **替换原图** 体验无缝阅读，或 **下载图片** 留存。
+
+---
+
+## 🚀 安装部署
+
+### 方式一：从 Releases 下载（推荐）
+
+1. 前往 [Releases 页面](https://github.com/Sakai-Hodo/ai-translator-plugin/releases)，下载最新版本的 `.zip` 压缩包。
+2. 解压到本地任意目录。
+3. 在 Chrome 地址栏输入 `chrome://extensions/`。
+4. 开启右上角 **开发者模式**。
+5. 点击 **加载已解压的扩展程序（Load unpacked）**。
+6. 选择解压后的文件夹即可。
+
+### 方式二：通过 Git 克隆
 
 ```bash
-# 克隆仓库
 git clone https://github.com/Sakai-Hodo/ai-translator-plugin.git
+git checkout ai-translator-plugin-Shoplazza
 ```
 
-1. 打开 Chrome，访问 `chrome://extensions/`
-2. 开启右上角 **开发者模式**
-3. 点击 **加载已解压的扩展程序**
-4. 选择 `ai-translator-plugin` 文件夹
+1. 在 Chrome 地址栏输入 `chrome://extensions/`。
+2. 开启右上角 **开发者模式**。
+3. 点击 **加载已解压的扩展程序**。
+4. 选择克隆下来的 `ai-translator-plugin` 根文件夹。
 
-### 2. 配置 API Key
+### 2. API 配置
 
-安装后会自动打开设置页。你也可以右键插件图标 → **选项** 进入设置。
+插件安装后会自动跳出（或通过点击扩展图标选择“选项”）**选项 / Options** 页面，请配置以下参数：
 
-| 配置项 | 说明 | 示例 |
-|--------|------|------|
-| **API Key** | 兼容 OpenAI 接口的 API Key | `sk-xxxxxxxxxxxx` |
-| **API Base URL** | API 服务地址 | `https://your-api-proxy.com/v1` |
-| **模型名称** | 图片编辑模型 ID | `jimeng-4.1` |
+| 配置项 | 填写说明 | 示例 |
+|--------|---------|------|
+| **API Key** | 兼容 OpenAI 格式的密钥 | `sk-xxx...` |
+| **API Base URL** | 接口底座地址 | `https://api.example.com/v1` |
+| **模型名称** | 使用的图像编辑模型 | `seedream-5.0` |
 
-> 💡 本扩展兼容所有 OpenAI 格式的图片生成/编辑 API（包括各类中转服务）。
->
-> 💡 配置完成后可点击 **🔗 测试连接** 按钮验证 API 是否可用。
+> 💡 **Tip**: 配置完成后，请点击 **🔗 测试连接** 验证连通性。
 
-### 3. 开始使用
+---
 
-配置完成后，在任意网页上悬浮图片即可看到翻译按钮！
+## 📁 目录结构
 
-## 📁 项目结构
-
-```
+```text
 ai-translator-plugin/
-├── manifest.json        # Chrome 扩展配置
-├── background.js        # Service Worker（API 调用 + 存储 + 下载）
-├── content.js           # 内容脚本（悬浮按钮 + 翻译弹窗 + 并发控制）
-├── content.css          # 内容脚本样式（Shadow DOM 注入）
-├── utils.js             # 共享工具函数
-├── popup.html/css/js    # 弹出面板（状态 + 快捷入口）
-├── options.html/css/js  # 设置页（API 配置 + 连接测试）
-├── history.html/css/js  # 翻译历史画廊页
-├── icon.png             # 扩展图标
-└── server/              # [可选] 本地后端（开发调试用）
-    ├── app.py
-    └── requirements.txt
+├── manifest.json        # 扩展声明文件
+├── background.js        # 后台 Server Worker（处理 API 请求与跨域）
+├── content.js/css       # 通用脚本与样式（悬浮与单页逻辑）
+├── shoplazza.js/css     # Shoplazza 专有逻辑（监听编辑器并批量处理）
+├── utils.js             # 公共函数与多语言设定
+├── popup.*              # 点击图标时的快捷弹出面板
+├── options.*            # 配置页面
+├── history.*            # 历史记录画廊
+└── icon.png             # 扩展图标
 ```
 
-## 🔧 技术架构
+---
 
-```
-用户浏览网页
-    ↓ 鼠标悬浮图片
-Content Script（注入悬浮按钮 + Shadow DOM 隔离）
-    ↓ 点击翻译（支持多图并发）
-Background Service Worker
-    ├── 下载原图 → Base64
-    ├── 调用 AI API（OpenAI 兼容接口）
-    ├── 保存记录到 IndexedDB
-    └── 返回翻译结果
-    ↓
-Content Script（队列式弹窗 + Toast 通知）
-    ├── 🔄 替换原图
-    └── 💾 下载图片
-```
-
-- **纯浏览器端运行**，无需后端服务器
-- **Manifest V3** 架构，符合 Chrome Web Store 最新规范
-- **Shadow DOM** 样式隔离，不影响宿主页面
-- **IndexedDB** 本地存储翻译历史
-- **并发翻译** + **队列弹窗**，多图翻译不丢失
-
-## 📋 更新日志
-
-### v1.1.0
-- ✅ 语言支持从 4 种扩展至 12 种（新增韩/德/西/葡/俄/阿/泰/越）
-- ✅ 新增 Toast 通知系统，替代 alert 弹窗，翻译进度实时反馈
-- ✅ 新增弹出面板（Popup），显示 API 状态和翻译记录数
-- ✅ 新增 API 连通性测试按钮
-- ✅ 自动记忆上次选择的目标语言
-- ✅ 修复悬浮按钮定位 bug（改用 fixed 定位）
-- ✅ 修复鼠标移出后按钮不消失的问题
-- ✅ 修复多图并发翻译时重试语言错乱 bug
-- ✅ CSS 提取至独立文件，提升代码可维护性
-- ✅ 提取共享工具函数，减少代码重复
-- ✅ 收窄扩展权限，移除未使用的 clipboardWrite
-
-### v1.0.2
-- ✅ 弹窗标题栏新增 ✕ 关闭按钮
-- ✅ 新增 🔁 重试按钮，一键重新翻译
-
-### v1.0.1
-- ✅ 支持多图片并发翻译
-- ✅ 弹窗队列化展示，不再堆叠
-- ✅ 翻译状态追踪，防重复提交
-- ✅ 已翻译图片不再显示翻译按钮
-
-### v1.0.0
-- 🎉 初始版本发布
-- ✨ AI 图片翻译核心功能
-- 📋 翻译历史画廊
-- ⚙️ API 配置设置页
-- ☁️ 无后端纯浏览器架构
-
-## 📄 License
+## 📄 开源协议
 
 MIT License
-
-## 🤝 Contributing
-
-欢迎提交 Issue 和 Pull Request！

@@ -40,6 +40,15 @@ function showEmpty() {
 }
 
 // ---------------------------------------------------------------------------
+// 安全转义 HTML 特殊字符
+// ---------------------------------------------------------------------------
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ---------------------------------------------------------------------------
 // 创建卡片
 // ---------------------------------------------------------------------------
 function createCard(rec) {
@@ -60,19 +69,20 @@ function createCard(rec) {
     }
   })();
 
+  // 使用 escapeHtml 避免 XSS（用户数据不直接拼进 innerHTML）
   card.innerHTML = `
-    <img class="card-img" src="${rec.translatedB64}" loading="lazy">
+    <img class="card-img" src="${escapeHtml(rec.translatedB64)}" loading="lazy">
     <div class="card-body">
       <div class="card-meta">
-        <span class="lang-badge">${rec.targetLanguage}</span>
-        <span class="card-time">${timeStr}</span>
+        <span class="lang-badge">${escapeHtml(rec.targetLanguage)}</span>
+        <span class="card-time">${escapeHtml(timeStr)}</span>
       </div>
-      <div class="card-source" title="${rec.sourcePageUrl || ""}">${sourceDomain}</div>
+      <div class="card-source" title="${escapeHtml(rec.sourcePageUrl || "")}">${escapeHtml(sourceDomain)}</div>
     </div>
     <div class="card-actions">
-      <button class="btn-compare" data-id="${rec.id}">🔍 对比</button>
-      <button class="btn-dl" data-id="${rec.id}">💾 下载</button>
-      <button class="btn-delete" data-id="${rec.id}">🗑️</button>
+      <button class="btn-compare">🔍 对比</button>
+      <button class="btn-dl">💾 下载</button>
+      <button class="btn-delete">🗑️</button>
     </div>
   `;
 
@@ -124,19 +134,20 @@ function showCompare(rec) {
     " " +
     time.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 
+  // 构建骨架 HTML（不含动态用户数据）
   overlay.innerHTML = `
     <div class="modal-box">
       <div class="modal-header">
-        <span class="modal-title">🔍 翻译对比 · ${rec.targetLanguage} · ${timeStr}</span>
+        <span class="modal-title"></span>
         <button class="modal-close">✕</button>
       </div>
       <div class="compare-grid">
         <div class="compare-col">
-          <img src="${rec.originalUrl}">
+          <img>
           <div class="compare-label">原图</div>
         </div>
         <div class="compare-col">
-          <img src="${rec.translatedB64}">
+          <img>
           <div class="compare-label">AI 译图</div>
         </div>
       </div>
@@ -146,6 +157,12 @@ function showCompare(rec) {
       </div>
     </div>
   `;
+
+  // 用 DOM API 安全填入用户数据
+  overlay.querySelector(".modal-title").textContent = `🔍 翻译对比 · ${rec.targetLanguage} · ${timeStr}`;
+  const imgs = overlay.querySelectorAll(".compare-col img");
+  imgs[0].src = rec.originalUrl;
+  imgs[1].src = rec.translatedB64;
 
   // 关闭
   overlay.querySelector(".modal-close").addEventListener("click", () => overlay.remove());
@@ -175,16 +192,15 @@ function showCompare(rec) {
 // 下载图片
 // ---------------------------------------------------------------------------
 function downloadImage(dataUrl, timestamp) {
-  const blob = base64ToBlob(dataUrl);
-  const blobUrl = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = "translated_" + (timestamp || Date.now()) + ".png";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+  try {
+    chrome.runtime.sendMessage({
+      action: "download",
+      url: dataUrl,
+      filename: "translated_" + (timestamp || Date.now()) + ".png"
+    });
+  } catch (err) {
+    console.error("下载出错:", err);
+  }
 }
 
 // ---------------------------------------------------------------------------
