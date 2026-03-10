@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SaaS AI Image Translator",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Hover over product images to translate them using AI.",
   "permissions": [
     "activeTab",

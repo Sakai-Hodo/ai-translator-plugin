@@ -2,7 +2,7 @@
 
 > 一款强大的浏览器插件，支持在网页上直接翻译包含外文的图片，并将原图中的文字无缝替换为目标语言，同时保持原图的设计和排版。本分支为 Shoplazza 定制版本，专为跨境电商优化！
 
-![Version](https://img.shields.io/badge/Version-2.3.3-blue)
+![Version](https://img.shields.io/badge/Version-2.3.4-blue)
 ![Platform](https://img.shields.io/badge/Platform-Chrome%20Extension-brightgreen)
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue)
 ![Shoplazza](https://img.shields.io/badge/Shoplazza-专用版-purple)
@@ -10,6 +10,10 @@
 📌 **说明**：通用版请切换至 [main 分支](https://github.com/Sakai-Hodo/ai-translator-plugin/tree/main)。
 
 ---
+
+## v2.3.4 更新内容 (2026-03-10)
+
+- **修复翻译按钮无法再次触发**：修复单张图片翻译完成后，关闭结果弹窗导致该图片无法再次触发翻译按钮的问题，现在关闭弹窗后可继续对同一图片发起新的翻译。
 
 ## v2.3.3 更新内容 (2026-02-27)
 

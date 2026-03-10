@@ -295,6 +295,8 @@
     function closeModal() {
       host.remove();
       isModalOpen = false;
+      // 清除翻译完成状态，允许再次翻译
+      translatingImages.delete(originalUrl);
       // 显示队列中的下一个
       if (modalQueue.length > 0) {
         const next = modalQueue.shift();

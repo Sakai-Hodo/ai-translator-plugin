@@ -283,17 +283,34 @@ async function handleCheckConfig(_msg, sendResponse) {
 }
 
 async function handleDownload(msg, sendResponse) {
+    const extMap = {
+        "image/png": ".png",
+        "image/jpeg": ".jpg",
+        "image/webp": ".webp",
+        "image/gif": ".gif",
+        "image/bmp": ".bmp",
+        "image/svg+xml": ".svg",
+    };
+
+    function ensureFilenameExt(name, mime) {
+        const ext = extMap[mime] || ".png";
+        // 去掉已有的图片后缀，换成正确的
+        name = name.replace(/\.(png|jpe?g|webp|gif|bmp|svg)$/i, "");
+        return name + ext;
+    }
+
     try {
         let finalUrl = msg.url;
-        // 如果是外部链接，先通过 background fetch 成 base64 的 data URL
-        // 这样可以避免服务器的 Content-Disposition 头覆盖掉我们在 msg.filename 里指定的 .png 后缀
+        let mime = "image/png";
+
+        // ----------------------------------------------------------------
+        // 情况 1: 外部 HTTP(S) URL → fetch 后转 data URL
+        // ----------------------------------------------------------------
         if (finalUrl.startsWith("http")) {
+            console.log("[Download] 外部 URL，正在 fetch...");
             const resp = await fetch(finalUrl);
             const buffer = await resp.arrayBuffer();
 
-            // 在 Service Worker (Manifest V3) 中，FileReader 不稳定且容易导致端口提早关闭
-            // 所以我们手动使用 ArrayBuffer => Base64 转换
-            // 优化：分块转换二进制，防止大图导致栈溢出，提升性能
             const bytes = new Uint8Array(buffer);
             let binary = "";
             const chunkSize = 8192;
@@ -302,16 +319,32 @@ async function handleDownload(msg, sendResponse) {
             }
             const b64 = btoa(binary);
 
-            // 关键修复：清洗 MIME 类型，剥离 charset=utf-8 等干扰项，确保 Chrome 识别后缀
-            let mime = resp.headers.get("Content-Type") || "image/png";
-            mime = mime.split(';')[0].trim();
+            mime = (resp.headers.get("Content-Type") || "image/png").split(";")[0].trim();
+            if (!mime.startsWith("image/")) mime = "image/png";
 
             finalUrl = `data:${mime};base64,${b64}`;
         }
+        // ----------------------------------------------------------------
+        // 情况 2: 已经是 data URL → 提取并修正 MIME
+        // ----------------------------------------------------------------
+        else if (finalUrl.startsWith("data:")) {
+            const m = finalUrl.match(/^data:([^;,]+)/);
+            if (m) {
+                mime = m[1];
+                // 修正非图片 MIME
+                if (!mime.startsWith("image/")) {
+                    mime = "image/png";
+                    // 重写 data URL 的 MIME 头
+                    finalUrl = finalUrl.replace(/^data:[^;,]+/, `data:${mime}`);
+                }
+            }
+            console.log("[Download] Data URL, MIME:", mime, "长度:", finalUrl.length);
+        }
 
-        // 强力补全：确保文件名一定带后缀名
         let filename = msg.filename || `translated_${Date.now()}.png`;
-        if (!filename.includes(".")) filename += ".png";
+        filename = ensureFilenameExt(filename, mime);
+
+        console.log("[Download] 最终 filename:", filename, "MIME:", mime, "saveAs: true");
 
         chrome.downloads.download(
             {
@@ -321,16 +354,17 @@ async function handleDownload(msg, sendResponse) {
             },
             (downloadId) => {
                 if (chrome.runtime.lastError) {
-                    console.error("Chrome Download Warning:", chrome.runtime.lastError.message);
+                    console.error("[Download] Chrome error:", chrome.runtime.lastError.message);
                 }
+                console.log("[Download] downloadId:", downloadId);
                 sendResponse({ ok: !!downloadId });
             }
         );
     } catch (err) {
-        console.error("Download Error:", err);
-        // 如果处理失败，降级使用原始 URL 下载
+        console.error("[Download] Error:", err);
+        // 降级：直接用原始 URL 下载
         let fallbackName = msg.filename || `translated_${Date.now()}.png`;
-        if (!fallbackName.includes(".")) fallbackName += ".png";
+        fallbackName = ensureFilenameExt(fallbackName, "image/png");
 
         chrome.downloads.download(
             {
@@ -340,7 +374,7 @@ async function handleDownload(msg, sendResponse) {
             },
             (downloadId) => {
                 if (chrome.runtime.lastError) {
-                    console.error("Fallback Download Warning:", chrome.runtime.lastError.message);
+                    console.error("[Download] Fallback error:", chrome.runtime.lastError.message);
                 }
                 sendResponse({ ok: !!downloadId });
             }
