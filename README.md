@@ -64,7 +64,16 @@
 
 ## 🚀 安装部署
 
-### 1. 下载与安装
+### 方式一：从 Releases 下载（推荐）
+
+1. 前往 [Releases 页面](https://github.com/Sakai-Hodo/ai-translator-plugin/releases)，下载最新版本的 `.zip` 压缩包。
+2. 解压到本地任意目录。
+3. 在 Chrome 地址栏输入 `chrome://extensions/`。
+4. 开启右上角 **开发者模式**。
+5. 点击 **加载已解压的扩展程序（Load unpacked）**。
+6. 选择解压后的文件夹即可。
+
+### 方式二：通过 Git 克隆
 
 ```bash
 git clone https://github.com/Sakai-Hodo/ai-translator-plugin.git
@@ -74,7 +83,7 @@ git checkout ai-translator-plugin-Shoplazza
 1. 在 Chrome 地址栏输入 `chrome://extensions/`。
 2. 开启右上角 **开发者模式**。
 3. 点击 **加载已解压的扩展程序**。
-4. 选择刚刚克隆下来的 `ai-translator-plugin` 根文件夹。
+4. 选择克隆下来的 `ai-translator-plugin` 根文件夹。
 
 ### 2. API 配置
 
