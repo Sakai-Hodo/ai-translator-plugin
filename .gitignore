@@ -18,3 +18,9 @@ venv/
 # Gemini agent
 .gemini/
 .agent/
+
+# Dist packages
+*.zip
+
+# Server (backend)
+server/

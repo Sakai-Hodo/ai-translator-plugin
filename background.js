@@ -33,7 +33,7 @@ function getConfig() {
         chrome.storage.local.get(["apiKey", "baseUrl", "model"], (data) => {
             resolve({
                 apiKey: data.apiKey || "",
-                baseUrl: data.baseUrl || "https://oneapi.gemiaude.com/v1",
+                baseUrl: data.baseUrl || "https://api.example.com/v1",
                 model: data.model || "jimeng-4.1",
             });
         });

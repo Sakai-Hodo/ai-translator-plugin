@@ -22,7 +22,7 @@ chrome.storage.local.get(["apiKey", "baseUrl", "model"], (data) => {
 // ---------------------------------------------------------------------------
 saveBtn.addEventListener("click", () => {
     const apiKey = apiKeyInput.value.trim();
-    const baseUrl = baseUrlInput.value.trim() || "https://oneapi.gemiaude.com/v1";
+    const baseUrl = baseUrlInput.value.trim() || "https://api.example.com/v1";
     const model = modelInput.value.trim() || "jimeng-4.1";
 
     if (!apiKey) {
@@ -44,7 +44,7 @@ saveBtn.addEventListener("click", () => {
 testBtn.addEventListener("click", () => {
     // 先用当前输入框的值临时保存，再测试
     const apiKey = apiKeyInput.value.trim();
-    const baseUrl = baseUrlInput.value.trim() || "https://oneapi.gemiaude.com/v1";
+    const baseUrl = baseUrlInput.value.trim() || "https://api.example.com/v1";
     const model = modelInput.value.trim() || "jimeng-4.1";
 
     if (!apiKey) {
